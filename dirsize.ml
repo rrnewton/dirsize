@@ -8,6 +8,14 @@
   functions.
 
   --Ryan Newton
+
+  [2004.12.03] So this program still segfaults sometimes.  I'm
+  guessing it uses too much memory or too much stack (probably later).
+  Right now I've got it crashing on a directory, but working on the
+  subparts of the direcotory (i.e. ds doesn't work but 'ds *' does).
+  Maybe I can try to analyze the memory performance more carefully.
+  This is yet another instance of "laziness hurts".
+
 *)
 
 open Printf
