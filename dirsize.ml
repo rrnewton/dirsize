@@ -1,5 +1,5 @@
 open Printf
-open Utils
+open Rutils
 open Unix
 open Dirtree
 
@@ -14,10 +14,10 @@ let count_color = ref Ansi.Lightgreen
 module Localutils = 
 struct
   let comma_str s = 
-    let ls = Utils.RString.charlist_of_string s in
-    let sep = Utils.RList.chunk 3 (List.rev ls) in
+    let ls = RString.charlist_of_string s in
+    let sep = RList.chunk 3 (List.rev ls) in
     let flipped = List.rev (List.map List.rev sep) in
-    let strs = List.map Utils.RString.string_of_charlist flipped in    
+    let strs = List.map RString.string_of_charlist flipped in    
       String.concat "," strs
 	
   let comma_int i = comma_str (string_of_int i)
@@ -67,6 +67,8 @@ struct
 end  *)
 
 
+(** Sorry I was messing with multiple vers, so this is wrapped up in a
+  module: *)
 module Newver = 
 struct
   open Int64;;
