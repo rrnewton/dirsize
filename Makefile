@@ -13,6 +13,8 @@ dirsize: dirtree dirsize.ml
 #	ocamlopt -c dirsize.ml
 	ocamlopt -o dirsize unix.cmxa utils.cmxa dirtree.cmxa dirsize.ml 
 
+debug: 	dirtree dirsize.ml
+	ocamlc -g -custom -ccopt -g -o debug unix.cma utils.cma dirtree.cma dirsize.ml 
 
 exec:
 	ocamlopt unix.cmxa utils.cmxa dirtree.mli dirtree.ml
@@ -29,4 +31,4 @@ cleanup:
 	rm -f *.cmi *.cmx *.cmo *.o *~ a.out
 
 clean: cleanup
-	rm -f *.cmxa *.cma *.a dirsize
+	rm -f *.cmxa *.cma *.a dirsize debug

@@ -4,5 +4,13 @@ release-1-1:
 directory if I do "ds".  But when I do "ds *" on my ffh dir it gets a
 bus error on "home"!!  Hmm... even doing "ds home" or "ds"/"ds ."
 within home works...  Very odd.
+  	Ack, the mystery increases when doing "ds home" I got the
+correct numbers for filecounts, dircounts, linkcounts, (and dir and
+link sizes), but I got 3 quadrillion for the summed plain file size.
+Whereas "ds ." within home gets the correct amount!  What sort of bug
+is this..?  "ds /ffh/ryan/home" segfaults or gets a buserror... sigh,
+the problem must be keeping too much in the tree at once... but I
+thought my method of keeping a stack of dirs that need to be summed
+prevented this?
 
 release-1-0: This works but it uses only 32 bit integers and overflows easily...

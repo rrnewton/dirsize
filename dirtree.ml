@@ -177,10 +177,15 @@ let dircount ltree =
 	      links = 0;  linkbytes = zero } in
     (* We print a progress indicator every 500 files. Hence the counter. *)
   let rec loop trees counter =
+(*	    printf "\n trees on stack: %d\n" (List.length trees);
+	    printf "MEM alloced: %f\n" (Gc.allocated_bytes ());
+	    (*Gc.print_stat Pervasives.stdout;*)
+	    Gc.full_major ();
+	    printf "GC DONE\n";*)
     let counter = 
       if counter > 500
-      then (print_char '.'; 
-	    Pervasives.flush Pervasives.stdout;
+      then (print_char '.';
+	    Pervasives.flush Pervasives.stdout;	    
 	    counter - 499)
       else counter + 1
     in

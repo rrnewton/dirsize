@@ -3,22 +3,32 @@ open Utils
 open Unix
 open Dirtree
 
-let comma_str s = 
-  let ls = RString.charlist_of_string s in
-  let sep = RList.chunk 3 (List.rev ls) in
-  let flipped = List.rev (List.map List.rev sep) in
-  let strs = List.map RString.string_of_charlist flipped in    
-    String.concat "," strs
-      
-let comma_int i = comma_str (string_of_int i)
-let comma_int64 i = comma_str (Int64.to_string i)
+let use_color   = ref false
+let norm_color  = ref Ansi.Darkgray
+let path_color  = ref Ansi.Red
+let total_color = ref Ansi.Green
+let count_color = ref Ansi.Lightgreen
 
-(*  let strip_slash s =
-    let len = String.length s in
-      if len=0 || s.[len-1] <> '/'
-      then s
-      else String.sub s 0 (len-1)*)
 
+(********************************************************************)
+module Localutils = 
+struct
+  let comma_str s = 
+    let ls = Utils.RString.charlist_of_string s in
+    let sep = Utils.RList.chunk 3 (List.rev ls) in
+    let flipped = List.rev (List.map List.rev sep) in
+    let strs = List.map Utils.RString.string_of_charlist flipped in    
+      String.concat "," strs
+	
+  let comma_int i = comma_str (string_of_int i)
+  let comma_int64 i = comma_str (Int64.to_string i)
+			
+  let switch_color c = 
+    if !use_color
+    then Ansi.switch_color c    
+end
+open Localutils
+(********************************************************************)
 
 (* This was my old definition *)
 (*let rec dirsize_old () = 
@@ -76,15 +86,38 @@ struct
       linkbytes = add a.linkbytes b.linkbytes }
   let dircount = Dirtree.dircount
   let print_res indent sum =
-    printf "%s%10s bytes in %d plain files.\n" 
-      indent (comma_int64 sum.filebytes) sum.files;
-    printf "%s%10s bytes in %d directories.\n" 
-      indent (comma_int64 sum.dirbytes) sum.dirs;
-    printf "%s%10s bytes in %d symlink files.\n" 
-      indent (comma_int64 sum.linkbytes) sum.links;
-    printf "%s%10s bytes total.\n" 
-      indent (comma_int64
-		(add (add sum.filebytes sum.dirbytes) sum.linkbytes ));
+    if !use_color
+    then
+      Ansi.print_colored 
+	[ !total_color, (sprintf "%s%14s" indent (comma_int64 sum.filebytes));
+	  !norm_color, " bytes in ";
+	  !count_color, (string_of_int sum.files);
+	  !norm_color, " plain files.\n";
+	  
+	  !norm_color, sprintf "%s%14s bytes in " 
+	    indent (comma_int64 sum.dirbytes);
+	  !count_color, (string_of_int sum.dirs);
+	  !norm_color, " directories.\n";
+
+	  !norm_color, sprintf "%s%14s bytes in " 
+	    indent (comma_int64 sum.linkbytes);
+	  !count_color, (string_of_int sum.links);
+	  !norm_color, " symlink files.\n";
+	  
+	  !norm_color, sprintf "%s%14s bytes total.\n" 
+	    indent 
+	    (comma_int64 (add (add sum.filebytes sum.dirbytes) sum.linkbytes))
+	]
+    else
+      (printf "%s%14s bytes in %d plain files.\n" 
+	 indent (comma_int64 sum.filebytes) sum.files;
+       printf "%s%14s bytes in %d directories.\n" 
+	 indent (comma_int64 sum.dirbytes) sum.dirs;
+       printf "%s%14s bytes in %d symlink files.\n" 
+	 indent (comma_int64 sum.linkbytes) sum.links;
+       printf "%s%14s bytes total.\n" 
+	 indent (comma_int64
+		   (add (add sum.filebytes sum.dirbytes) sum.linkbytes )));
 end
 
 (* Main script *)
@@ -94,13 +127,30 @@ let main (count : lfiletree->dircount_t)
   plus zed =
 
   let paths = 
-    if Array.length Sys.argv < 2 
+    (let temp = List.filter
+		  (function
+		       "-c" -> use_color := true; false
+		     | "-b" -> use_color := true; 
+			 path_color  := Ansi.Lightblue;
+			 total_color := Ansi.Yellow;
+			 false
+		     | _     -> true)
+		  (List.tl (Array.to_list Sys.argv)) in
+    if temp = []
+      (* DEBUGGING: *) 
+    (*then ["/ffh/ryan/home"]*)
     then [Filename.current_dir_name]
-    else List.tl (Array.to_list Sys.argv) in
+    else temp)
+  in
   let sum = 
     List.fold_left 
       (fun sum path ->
-	 printf "\n  Summing %s     " path;
+	 if !use_color 
+	 then Ansi.print_colored 
+	   [!norm_color, "\n  Summing "; 
+	    !path_color, path; 
+	    !norm_color, "    "]
+	 else printf "\n  Summing %s     " path;
 	 Pervasives.flush Pervasives.stdout;
 	 let res = count (read_ldir path) in
 	   print_newline ();
@@ -110,8 +160,9 @@ let main (count : lfiletree->dircount_t)
   in 
     if List.tl paths <> []
     then (printf "\nTotal: \n";
-	  printres "  " sum);;
-
+	  printres "  " sum);
+    if !use_color
+    then switch_color Ansi.Reset;;
 
 main 
   Newver.dircount
@@ -119,7 +170,7 @@ main
   Newver.plus
   Newver.zed;;
 
-
+(*Ansi.test_colors ();;*)
 
 (*main 
   Oldver.dircount
