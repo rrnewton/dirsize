@@ -29,7 +29,7 @@ and lfiletree =
   | Llink of (string * Unix.LargeFile.stats) * string
   | Lfile of (string * Unix.LargeFile.stats)
 and afiletree =
-    Adir  of (string * Unix.LargeFile.stats * string) * lfiletree list Lazy.t
+    Adir  of (string * Unix.LargeFile.stats * string) * afiletree list Lazy.t
   | Alink of (string * Unix.LargeFile.stats * string) * string
   | Afile of (string * Unix.LargeFile.stats * string)
       (** The triple in each of these variants contains (name, stats,
@@ -40,14 +40,19 @@ and afiletree =
 val force_ltree : lfiletree -> unit
   (** Force_ltree.  This fully evaluates all the subdirs, reading all
     relevent information of the hard drive. *)
+val force_atree : afiletree -> unit
+
 val tree_of_ltree : lfiletree -> filetree
   (** Tree_of_ltree does the same thing as force_ltree, but also
     rebuilds the no-longer-lazy tree as a normal filetree. *)
+val tree_of_atree : afiletree -> filetree
 
 (*val atree_of_ltree : lfiletree -> filetree*)
 
-val read_ldir : string -> lfiletree
+
 val read_dir : string -> filetree
+val read_ldir : string -> lfiletree
+val read_adir : string -> afiletree
 
 val print_tree : filetree -> unit
 

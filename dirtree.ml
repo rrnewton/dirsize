@@ -1,3 +1,12 @@
+(** dirtree.ml
+  
+  This little program reifies a directory structure as a recursive
+  Caml datatype.  The directory can be read on demand, or eagerly.
+
+  I'm not entirely confident that it doesn't have memory performance
+  issues when reading trees lazily.
+*)
+
 open Int64
 open Printf
 open Unix
@@ -78,7 +87,7 @@ and lfiletree =
   | Lfile of (string * stats)
 
 and afiletree =
-    Adir of  (string * stats * string) * lfiletree list Lazy.t
+    Adir of  (string * stats * string) * afiletree list Lazy.t
   | Alink of (string * stats * string) * string
   | Afile of (string * stats * string)
 
@@ -90,6 +99,14 @@ let rec force_ltree ltree =
     | Ldir (_,ltree) -> 
 	List.iter force_ltree (Lazy.force ltree)
 
+let rec force_atree atree = 
+  match atree with 
+      Afile _ -> ()    
+    | Alink _ -> ()
+    | Adir (_,atree) -> 
+	List.iter force_atree (Lazy.force atree)
+
+
 let rec tree_of_ltree ltree = 
   match ltree with 
       Lfile ( name,_)         -> File name
@@ -98,13 +115,22 @@ let rec tree_of_ltree ltree =
 	Dir (name,
 	     List.map tree_of_ltree (Lazy.force ltree))
 
+
+let rec tree_of_atree atree = 
+  match atree with 
+      Afile ( name,_,_)         -> File name
+    | Alink ((name,_,_),link)  -> Link (name,link)
+    | Adir  ((name,_,_),atree) -> 
+	Dir (name,
+	     List.map tree_of_atree (Lazy.force atree))
+
+
+
 (* This is annoying *)
 let get_absolute_path s =
-  if is_absolute s 
+  if not (is_relative s)
   then s
-  else 
-  current_dir_name
-
+  else concat (getcwd()) s
 
 (* This should really be called read_lfile, because it can read
    symlinks and plainfiles as well as directories... *)
@@ -145,29 +171,29 @@ let read_dir path = tree_of_ltree (read_ldir path)
 *)
 (* adir's have name,stats,fullpath *)
 
-let rec read_adir path =
-  let startpath = get_absolute_path path in
-  let stats = lstat path in
+let rec read_adir inputpath =
+  let startpath = get_absolute_path inputpath in
+  let stats = lstat startpath in
     match stats.st_kind  with
-	S_REG -> Lfile (basename path,stats)
-      | S_LNK -> Llink ((basename path,stats),readlink path)
+	S_REG -> Afile (basename startpath,stats,startpath)
+      | S_LNK -> Alink ((basename startpath,stats,startpath),readlink startpath)
       | S_DIR -> 
-	  let rec loop name path stats = 
-	    Ldir 
-	      ((name,stats),
+	  let rec loop name fullpath stats = 
+	    Adir 
+	      ((name,stats,fullpath),
 	       lazy
-		 (let files,dirs,syms = expand_dir path in
-		    List.map (fun x -> Lfile x) files @
+		 (let files,dirs,syms = expand_dir fullpath in
+		    List.map (fun (name,stats) -> Afile (name,stats,concat fullpath name)) files @
 		    List.map (fun (n,s) -> 
-				Llink ((n,s),(readlink (concat path n)))) 
+				let newpath = concat fullpath n in
+				  Alink ((n,s,newpath), readlink newpath))
 		      syms @
 		    List.map (fun (n,s) -> 
-				loop n (concat path n) s) dirs)) in 
-	    loop (basename path) path (lstat path)
+				loop n (concat fullpath n) s) dirs)) 
+	  in 
+	    loop (basename startpath) startpath (lstat startpath)
       | _ -> failwith 
-	  (sprintf "read_ldir: this file is of an unknown type: %s" path)
-
-
+	  (sprintf "read_ldir: this file is of an unknown type: %s" startpath)
 
 
 let print_tree ft =
