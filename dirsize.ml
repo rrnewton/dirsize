@@ -115,6 +115,7 @@ let print_help () =
   print_endline "  -s   Sort output by filesize, increasing.";
   exit 0;;
 
+let pair a b = (a,b) 
 
 (********************************************************************)
 (* Main script *)
@@ -164,19 +165,19 @@ let main () =
   let total = List.fold_left plus zed counts in
     
     if !sort_output
-    then (let sorted = List.sort cmpr counts in
-	    List.iter2
-	      (fun cnt path -> 
-		 if !use_color 
-		 then Ansi.print_colored 
-		   [!norm_color, "\n  Summed "; 
-		    !path_color, path ]
-		 else printf "\n  Summed %s     " path;
-		 print_newline ();
-		 print_res "    " cnt)
-	      sorted paths);
-
-
+    then 
+      (let zipped = List.map2 pair counts paths in
+       let sorted = List.sort (fun x y -> cmpr (fst x) (fst y)) zipped in
+	 List.iter
+	   (fun (cnt,path) -> 
+	      if !use_color 
+	      then Ansi.print_colored 
+		[!norm_color, "\n  Summed "; 
+		 !path_color, path ]
+	      else printf "\n  Summed %s     " path;
+	      print_newline ();
+	      print_res "    " cnt)
+	   sorted);
     
     if List.tl paths <> []
     then (printf "\nTotal: \n";
