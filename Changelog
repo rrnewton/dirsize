@@ -1,5 +1,8 @@
 
 release-1-1:
-	
+	I'm confused... this one works.  It even works on my ffh
+directory if I do "ds".  But when I do "ds *" on my ffh dir it gets a
+bus error on "home"!!  Hmm... even doing "ds home" or "ds"/"ds ."
+within home works...  Very odd.
 
 release-1-0: This works but it uses only 32 bit integers and overflows easily...
