@@ -15,7 +15,7 @@ dirsize: dirtree dirsize.ml
 
 mods: dirsize modtimes.ml
 #	ocamlopt -c dirsize.ml
-	ocamlopt -o mods unix.cmxa graphics.cmxa rutils.cmxa graphs.cmxa dirtree.cmxa modtimes.mli modtimes.ml 
+	ocamlopt -o mods unix.cmxa graphics.cmxa rutils.cmxa graphs.cmxa dirtree.cmxa modtimes.ml 
 
 debug: 	dirtree dirsize.ml
 	ocamlc -g -custom -ccopt -g -o debug unix.cma rutils.cma dirtree.cma dirsize.ml 

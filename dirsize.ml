@@ -15,6 +15,8 @@ open Rutils
 open Unix
 open Dirtree
 
+let version = "0.9"
+
 let use_color   = ref false
 let norm_color  = ref Ansi.Darkgray
 let path_color  = ref Ansi.Red
@@ -105,10 +107,16 @@ end
 (********************************************************************)
 
 
+let print_version () = 
+  print_string "ds - directory size: ver ";
+  print_endline version;
+  exit 0;;
+
 let print_help () = 
   print_endline "Usage: dirsize/ds <options> <path-names>";
   print_endline "options are:";
   print_endline "  -h   Show this help message.";
+  print_endline "  -v   Show the version.";
   print_endline "  -c   Use ANSI color.  Green and red theme.";
   print_endline "  -b   Use ANSI color.  Blue and yellow theme.";
   print_endline "  -nc  Don't use color.  Plain ASCII.";
@@ -129,6 +137,7 @@ let main () =
 		  (* Process flags *)
 		  (function
 		     | "-h"  -> print_help (); false
+		     | "-v"  -> print_version (); false
 		     | "-c"  -> use_color := true; false
 		     | "-nc" -> use_color := false; false
 		     | "-b"  -> use_color := true; 
