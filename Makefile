@@ -1,6 +1,6 @@
 
 
-all: dirtree dirsize 
+all: dirtree dirsize mods
 	chmod o+r *
 
 dirtree: dirtree.ml dirtree.mli
@@ -12,6 +12,10 @@ dirtree: dirtree.ml dirtree.mli
 dirsize: dirtree dirsize.ml 
 #	ocamlopt -c dirsize.ml
 	ocamlopt -o dirsize unix.cmxa rutils.cmxa dirtree.cmxa dirsize.ml 
+
+mods: dirsize modtimes.ml
+#	ocamlopt -c dirsize.ml
+	ocamlopt -o mods unix.cmxa rutils.cmxa dirtree.cmxa modtimes.ml 
 
 debug: 	dirtree dirsize.ml
 	ocamlc -g -custom -ccopt -g -o debug unix.cma rutils.cma dirtree.cma dirsize.ml 
