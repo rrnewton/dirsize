@@ -2,8 +2,9 @@
 
 val expand_dir :
   string ->
-  (string * Unix.stats) list * (string * Unix.stats) list *
-  (string * Unix.stats) list
+  (string * Unix.LargeFile.stats) list * 
+  (string * Unix.LargeFile.stats) list *
+  (string * Unix.LargeFile.stats) list
 
 
   (** There are three types of filetrees.  Plain filetrees are
@@ -23,13 +24,13 @@ type filetree =
   | Link of string * string
   | File of string
 and lfiletree =
-    Ldir  of (string * Unix.stats) * lfiletree list Lazy.t
-  | Llink of (string * Unix.stats) * string
-  | Lfile of (string * Unix.stats)
+    Ldir  of (string * Unix.LargeFile.stats) * lfiletree list Lazy.t
+  | Llink of (string * Unix.LargeFile.stats) * string
+  | Lfile of (string * Unix.LargeFile.stats)
 and afiletree =
-    Adir  of (string * Unix.stats * string) * lfiletree list Lazy.t
-  | Alink of (string * Unix.stats * string) * string
-  | Afile of (string * Unix.stats * string)
+    Adir  of (string * Unix.LargeFile.stats * string) * lfiletree list Lazy.t
+  | Alink of (string * Unix.LargeFile.stats * string) * string
+  | Afile of (string * Unix.LargeFile.stats * string)
 
 val force_ltree : lfiletree -> unit
 val tree_of_ltree : lfiletree -> filetree
@@ -41,14 +42,16 @@ val read_dir : string -> filetree
 
 val print_tree : filetree -> unit
 
-type pair = int * int
-val dircount_old : lfiletree -> pair * pair * pair
 
-type dircount_t = { mutable files: int; 
-		    mutable filebytes: int;
-		    mutable dirs: int; 
-		    mutable dirbytes: int;
-		    mutable links: int; 
-		    mutable linkbytes: int }
+(*type pair = int * int
+val dircount_old : lfiletree -> pair * pair * pair*)
+
+
+type dircount_t = { mutable files:     int; 
+		    mutable filebytes: Int64.t;
+		    mutable dirs:      int; 
+		    mutable dirbytes:  Int64.t;
+		    mutable links:     int; 
+		    mutable linkbytes: Int64.t }
 
 val dircount : lfiletree -> dircount_t

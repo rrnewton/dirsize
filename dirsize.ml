@@ -11,6 +11,7 @@ let comma_str s =
     String.concat "," strs
       
 let comma_int i = comma_str (string_of_int i)
+let comma_int64 i = comma_str (Int64.to_string i)
 
 (*  let strip_slash s =
     let len = String.length s in
@@ -20,7 +21,7 @@ let comma_int i = comma_str (string_of_int i)
 
 
 (* This was my old definition *)
-let rec dirsize_old () = 
+(*let rec dirsize_old () = 
   let files,dirs,links = expand_dir "." in
   let s,f,d,l = 
     List.fold_left 
@@ -38,8 +39,7 @@ let rec dirsize_old () =
     (thissize + s,
      List.length files + f,
      List.length dirs  + d,
-     List.length links + l);;   
-
+     List.length links + l);; 
 
 module Oldver =
 struct
@@ -54,36 +54,37 @@ struct
     printf "%s%11s bytes in %d directories.\n" indent (comma_int ds) d;
     printf "%s%11s bytes in %d symlink files.\n" indent (comma_int ls) l;
     printf "%s%11s bytes total.\n" indent (comma_int (fs+ds+ls))
-end
+end  *)
 
 
 module Newver = 
 struct
+  open Int64;;
   let zed =
     { files     = 0;
-      filebytes = 0;
+      filebytes = zero;
       dirs      = 0;
-      dirbytes  = 0;
+      dirbytes  = zero;
       links     = 0;
-      linkbytes = 0 }
+      linkbytes = zero }
   let plus a b =
     { files     = a.files + b.files;
-      filebytes = a.filebytes + b.filebytes;
+      filebytes = add a.filebytes b.filebytes;
       dirs      = a.dirs + b.dirs;
-      dirbytes  = a.dirbytes + b.dirbytes;
+      dirbytes  = add a.dirbytes b.dirbytes;
       links     = a.links + b.links;
-      linkbytes = a.linkbytes + b.linkbytes }
+      linkbytes = add a.linkbytes b.linkbytes }
   let dircount = Dirtree.dircount
   let print_res indent sum =
     printf "%s%10s bytes in %d plain files.\n" 
-      indent (comma_int sum.filebytes) sum.files;
+      indent (comma_int64 sum.filebytes) sum.files;
     printf "%s%10s bytes in %d directories.\n" 
-      indent (comma_int sum.dirbytes) sum.dirs;
+      indent (comma_int64 sum.dirbytes) sum.dirs;
     printf "%s%10s bytes in %d symlink files.\n" 
-      indent (comma_int sum.linkbytes) sum.links;
+      indent (comma_int64 sum.linkbytes) sum.links;
     printf "%s%10s bytes total.\n" 
-      indent (comma_int 
-		(sum.filebytes + sum.dirbytes + sum.linkbytes ));
+      indent (comma_int64
+		(add (add sum.filebytes sum.dirbytes) sum.linkbytes ));
 end
 
 (* Main script *)

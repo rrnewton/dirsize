@@ -1,5 +1,7 @@
+open Int64
 open Printf
 open Unix
+open Unix.LargeFile
 open Utils
 open Utils.RMisc
 open Filename
@@ -139,7 +141,7 @@ let print_tree ft =
 (* I have two versions of dircount here... one returns a bunch of
    tuples, the other returns a struct *)
 
-type pair = int * int
+(*type pair = int * int
 
 (** This takes a lazy filtree and returns a triplet of doubletons, the
   doubletons represent the number of files and their size in bytes, the
@@ -158,19 +160,21 @@ let rec dircount_old ltree =
 	      (l+l',ls+ls')))
 	((0,0), (1,s.st_size), (0,0)) 
 	(Lazy.force lazyls)
+*)
 
 
-type dircount_t = { mutable files: int; 
-		    mutable filebytes: int;
-		    mutable dirs: int; 
-		    mutable dirbytes: int;
-		    mutable links: int; 
-		    mutable linkbytes: int }
+
+type dircount_t = { mutable files:     int; 
+		    mutable filebytes: Int64.t;
+		    mutable dirs:      int; 
+		    mutable dirbytes:  Int64.t;
+		    mutable links:     int; 
+		    mutable linkbytes: Int64.t }
 
 let dircount ltree = 
-  let sum = { files = 0;  filebytes = 0;
-	      dirs  = 0;  dirbytes  = 0;
-	      links = 0;  linkbytes = 0 } in
+  let sum = { files = 0;  filebytes = zero;
+	      dirs  = 0;  dirbytes  = zero;
+	      links = 0;  linkbytes = zero } in
     (* We print a progress indicator every 500 files. Hence the counter. *)
   let rec loop trees counter =
     let counter = 
@@ -185,17 +189,17 @@ let dircount ltree =
       else match List.hd trees with 
 	  Lfile (_,s) ->
 	    sum.files <- sum.files + 1; 
-	    sum.filebytes <- sum.filebytes + s.st_size;
+	    sum.filebytes <- add sum.filebytes s.st_size;
 	    loop (List.tl trees) counter
 	      
 	| Llink ((_,s),_) -> 
 	    sum.links <- sum.links + 1; 
-	    sum.linkbytes <- sum.linkbytes + s.st_size ;
+	    sum.linkbytes <- add sum.linkbytes s.st_size;
 	    loop (List.tl trees) counter
 	      
 	| Ldir  ((_,s),lazyls) ->
 	    sum.dirs <- sum.dirs + 1;
-	    sum.dirbytes <- sum.dirbytes + s.st_size;
+	    sum.dirbytes <- add sum.dirbytes s.st_size;
 	    loop (Lazy.force lazyls @ List.tl trees) counter
   in loop [ ltree ] 0
 
