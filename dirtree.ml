@@ -171,7 +171,7 @@ type dircount_t = { mutable files:     int;
 		    mutable links:     int; 
 		    mutable linkbytes: Int64.t }
 
-let dircount ltree = 
+let dircount ?(print_progress=false) ltree = 
   let sum = { files = 0;  filebytes = zero;
 	      dirs  = 0;  dirbytes  = zero;
 	      links = 0;  linkbytes = zero } in
@@ -183,7 +183,7 @@ let dircount ltree =
 	    Gc.full_major ();
 	    printf "GC DONE\n";*)
     let counter = 
-      if counter > 500
+      if counter > 500 && print_progress
       then (print_char '.';
 	    Pervasives.flush Pervasives.stdout;	    
 	    counter - 499)

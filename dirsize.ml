@@ -44,43 +44,6 @@ end
 open Localutils
 (********************************************************************)
 
-(* This was my old definition *)
-(*let rec dirsize_old () = 
-  let files,dirs,links = expand_dir "." in
-  let s,f,d,l = 
-    List.fold_left 
-      (fun (s,f,d,l) (dir,_) -> 
-	 Printf.printf "pushing %s\n" dir;
-	 chdir dir; 
-	 let (s',f',d',l') = dirsize_old () in 
-	   Printf.printf "  popping...\n";
-	   chdir ".."; 
-	   (s+s',f+f',d+d',l+l'))
-      (0,0,0,0) dirs in    
-  let thissize = 
-    List.fold_left (fun s (_,stat) -> s + stat.st_size) 0 files 
-  in
-    (thissize + s,
-     List.length files + f,
-     List.length dirs  + d,
-     List.length links + l);; 
-
-module Oldver =
-struct
-  let zed = ((0,0), (0,0), (0,0))
-  let plus
-    ((f,fs), (d,ds), (l,ls)) 
-    ((f',fs'), (d',ds'), (l',ls')) =
-    ((f+f',fs+fs'), (d+d',ds+ds'), (l+l',ls+ls'))
-  let dircount = dircount
-  let print_res indent ((f,fs), (d,ds), (l,ls)) =  
-    printf "%s%11s bytes in %d plain files.\n" indent (comma_int fs) f;
-    printf "%s%11s bytes in %d directories.\n" indent (comma_int ds) d;
-    printf "%s%11s bytes in %d symlink files.\n" indent (comma_int ls) l;
-    printf "%s%11s bytes total.\n" indent (comma_int (fs+ds+ls))
-end  *)
-
-
 (** Sorry I was messing with multiple vers, so this is wrapped up in a
   module: *)
 module Newver = 
@@ -100,7 +63,10 @@ struct
       dirbytes  = add a.dirbytes b.dirbytes;
       links     = a.links + b.links;
       linkbytes = add a.linkbytes b.linkbytes }
-  let dircount = Dirtree.dircount
+
+  let cmpr a b = Int64.compare a.filebytes b.filebytes
+    
+  let count = Dirtree.dircount
   let print_res indent sum =
     if !use_color
     then
@@ -136,9 +102,7 @@ struct
 		   (add (add sum.filebytes sum.dirbytes) sum.linkbytes )));
 end
 
-
 (********************************************************************)
-
 
 
 let print_help () = 
@@ -155,11 +119,11 @@ let print_help () =
 (********************************************************************)
 (* Main script *)
 
-let main (count : lfiletree->dircount_t)
-         (printres : string -> dircount_t -> unit)
-          plus zed =
+open Newver
 
-  let paths = 
+let main () =
+
+  let paths = (* Here are all those filepaths. *)
     (let temp = List.filter
 		  (* Process flags *)
 		  (function
@@ -173,46 +137,53 @@ let main (count : lfiletree->dircount_t)
 		     | "-s"  -> sort_output := true; false
 		     | _     -> true)
 		  (List.tl (Array.to_list Sys.argv)) in
-    if temp = []
-      (* DEBUGGING: *) 
-      (*then ["/ffh/ryan/home"]*)
-    then [Filename.current_dir_name]
-    else temp)
-  in
-  let sum = 
-    List.fold_left 
-      (fun sum path ->
-	 if !use_color 
-	 then Ansi.print_colored 
-	   [!norm_color, "\n  Summing "; 
-	    !path_color, path; 
-	    !norm_color, "    "]
-	 else printf "\n  Summing %s     " path;
-	 Pervasives.flush Pervasives.stdout;
-	 let res = count (read_ldir path) in
-	   print_newline ();
-	   printres "    " res;
-	   plus res sum)
-      zed paths 
-  in 
+       if temp = []
+	 (* DEBUGGING: *) 
+	 (*then ["/ffh/ryan/home"]*)
+       then [Filename.current_dir_name]
+       else temp) in
+    
+  let counts = 
+    List.map
+      (fun path ->
+	 if not !sort_output 
+	 then (if !use_color 
+	       then Ansi.print_colored 
+		 [!norm_color, "\n  Summing "; 
+		  !path_color, path; 
+		  !norm_color, "    "]
+	       else printf "\n  Summing %s     " path;
+	       Pervasives.flush Pervasives.stdout;
+	       let res = count ~print_progress:true (read_ldir path) in
+		 print_newline ();
+		 print_res "    " res;
+		 res)
+	 else count ~print_progress:false (read_ldir path))
+      paths in
+
+  let total = List.fold_left plus zed counts in
+    
+    if !sort_output
+    then (let sorted = List.sort cmpr counts in
+	    List.iter2
+	      (fun cnt path -> 
+		 if !use_color 
+		 then Ansi.print_colored 
+		   [!norm_color, "\n  Summed "; 
+		    !path_color, path ]
+		 else printf "\n  Summed %s     " path;
+		 print_newline ();
+		 print_res "    " cnt)
+	      sorted paths);
+
+
+    
     if List.tl paths <> []
     then (printf "\nTotal: \n";
-	  printres "  " sum);
+	  print_res "  " total);
     if !use_color
     then switch_color Ansi.Reset;;
 
-main 
-  Newver.dircount
-  Newver.print_res 
-  Newver.plus
-  Newver.zed;;
 
-(*Ansi.test_colors ();;*)
-
-(*main 
-  Oldver.dircount
-  Oldver.print_res 
-  Oldver.plus
-  Oldver.zed;;*)
-
+main ();;
 	   

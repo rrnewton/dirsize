@@ -63,7 +63,7 @@ type dircount_t = { mutable files:     int;
 		    mutable links:     int; 
 		    mutable linkbytes: Int64.t }
 
-val dircount : lfiletree -> dircount_t
+val dircount : ?print_progress:bool -> lfiletree -> dircount_t
   (** Dircount counts the number of files of different types within a
     directory and all its subdirectories.  As a bonus we get
     (system-independent) byte counts. *)
