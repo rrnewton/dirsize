@@ -1,3 +1,15 @@
+(** dirsize.ml
+
+  This program makes use of my little Dirtree library to build
+  summaries of the contents of paths given as input on the command
+  line.
+
+  It also depends on my "Rutils" generic library for Ansi printing
+  functions.
+
+  --Ryan Newton
+*)
+
 open Printf
 open Rutils
 open Unix
@@ -8,6 +20,8 @@ let norm_color  = ref Ansi.Darkgray
 let path_color  = ref Ansi.Red
 let total_color = ref Ansi.Green
 let count_color = ref Ansi.Lightgreen
+
+let sort_output = ref false
 
 
 (********************************************************************)
@@ -122,26 +136,46 @@ struct
 		   (add (add sum.filebytes sum.dirbytes) sum.linkbytes )));
 end
 
+
+(********************************************************************)
+
+
+
+let print_help () = 
+  print_endline "Usage: dirsize/ds <options> <path-names>";
+  print_endline "options are:";
+  print_endline "  -h   Show this help message.";
+  print_endline "  -c   Use ANSI color.  Green and red theme.";
+  print_endline "  -b   Use ANSI color.  Blue and yellow theme.";
+  print_endline "  -nc  Don't use color.  Plain ASCII.";
+  print_endline "  -s   Sort output by filesize, increasing.";
+  exit 0;;
+
+
+(********************************************************************)
 (* Main script *)
 
-let main (count : lfiletree->dircount_t) 
-  (printres : string -> dircount_t -> unit)
-  plus zed =
+let main (count : lfiletree->dircount_t)
+         (printres : string -> dircount_t -> unit)
+          plus zed =
 
   let paths = 
     (let temp = List.filter
+		  (* Process flags *)
 		  (function
-		       "-c"  -> use_color := true; false
+		     | "-h"  -> print_help (); false
+		     | "-c"  -> use_color := true; false
 		     | "-nc" -> use_color := false; false
 		     | "-b"  -> use_color := true; 
 			 path_color  := Ansi.Lightblue;
 			 total_color := Ansi.Yellow;
 			 false
+		     | "-s"  -> sort_output := true; false
 		     | _     -> true)
 		  (List.tl (Array.to_list Sys.argv)) in
     if temp = []
       (* DEBUGGING: *) 
-    (*then ["/ffh/ryan/home"]*)
+      (*then ["/ffh/ryan/home"]*)
     then [Filename.current_dir_name]
     else temp)
   in
