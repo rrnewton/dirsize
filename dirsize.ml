@@ -129,8 +129,9 @@ let main (count : lfiletree->dircount_t)
   let paths = 
     (let temp = List.filter
 		  (function
-		       "-c" -> use_color := true; false
-		     | "-b" -> use_color := true; 
+		       "-c"  -> use_color := true; false
+		     | "-nc" -> use_color := false; false
+		     | "-b"  -> use_color := true; 
 			 path_color  := Ansi.Lightblue;
 			 total_color := Ansi.Yellow;
 			 false
