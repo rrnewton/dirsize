@@ -25,7 +25,7 @@ top:
 install:
 	cp dirtree.a dirtree.cmxa dirtree.cma `ocamlc -where`
 	cp dirtree.cmi dirtree.mli `ocamlc -where`
-	which ocamlc | dirname | cp dirsize -
+	dirname `which ocamlc` | cp dirsize -
 
 cleanup: 
 	rm -f *.cmi *.cmx *.cmo *.o *~ a.out

@@ -3,7 +3,7 @@ open Printf
 open Unix
 open Unix.LargeFile
 open Utils
-open Utils.RMisc
+open Utils.Misc
 open Filename
 
 (*let string 
