@@ -7,6 +7,7 @@
 *)
 
 open Printf
+open Graphs
 open Rutils
 open Unix
 open Unix.LargeFile
@@ -20,7 +21,14 @@ let count_color = ref Ansi.Lightgreen
 
 let verbose = ref true 
 
+(** Print date in year-first format.*)
 let year_first = ref false
+
+(** Print average dates rather than earliest and latest. *)
+let averages = ref false
+
+(** Graphs a distribution of times. *)
+let graph_distro = ref false
 
 (*let sort_output = ref false*)
 
@@ -46,18 +54,25 @@ open Localutils
 (********************************************************************)
 
 type span = { early : float;
+	      acc   : float list;
+	      sum   : float; 
+	      count : float;
 	      late  : float }
 
 type modtimes_t = { mutable filespan : span;
 		    mutable dirspan  : span; 
 		    mutable linkspan : span }
 
-let base_span = { early=max_float ; late=min_float }
+let base_span = { early=max_float ; 
+		  acc   = [];
+		  sum   = 0.0;
+		  count = 0.0;
+		  late=min_float }
 
 let is_live span = 
   ((span.early <> max_float) || 
-   (span.late  <> min_float))
-  
+   (span.late  <> min_float) || 
+   (span.count > 0.0))
 
 let update_span spn time =
   let early = (if time < spn.early
@@ -65,89 +80,114 @@ let update_span spn time =
 	       else spn.early)
   and late  = (if time > spn.late
 	       then time 
-	       else spn.late) in
-    { early= early; late= late}
+	       else spn.late) 
+  and acc   = time :: spn.acc
+  and sum   = spn.sum +. time
+  and count = spn.count +. 1.0  in
+    { early= early; 
+      acc= acc;
+      sum= sum;
+      count= count;
+      late= late }
 
-module Newver = 
-struct
-  open Int64;;
+open Int64;;
     
-  let scan_modtimes ?(print_progress=false) ltree = 
-    let sum = { filespan = base_span;
-		dirspan  = base_span;
-		linkspan = base_span } in
-      (* We print a progress indicator every 500 files. Hence the counter. *)
-      (* This is written so that it SHOULD do a depth first traversal
-	 of the tree without building the whole thing in memory.  It
-	 would do well to verify this property. *)
-    let rec loop trees counter =
-      (*	    printf "\n trees on stack: %d\n" (List.length trees);
-		    printf "MEM alloced: %f\n" (Gc.allocated_bytes ());
-      (*Gc.print_stat Pervasives.stdout;*)
-		    Gc.full_major ();
-		    printf "GC DONE\n";*)
-      let counter = 
-	if counter > 500 && print_progress
-	then (print_char '.';
-	      Pervasives.flush Pervasives.stdout;	    
-	      counter - 499)
-	else counter + 1
-      in
-	if trees = []
-	then sum
-	else (match List.hd trees with 
-		  Lfile (_,s) ->
-		    sum.filespan <- update_span sum.filespan s.st_mtime;
-		    loop (List.tl trees) counter
-		      
-		| Llink ((_,s),_) -> 
-		    sum.linkspan <- update_span sum.linkspan s.st_mtime;
-		    loop (List.tl trees) counter
-		      
-		| Ldir  ((_,s),lazyls) ->
-		    sum.dirspan <-  update_span sum.dirspan  s.st_mtime;
-		    loop (Lazy.force lazyls @ List.tl trees) counter)
+let zed = { filespan = base_span;
+	    dirspan  = base_span;
+	    linkspan = base_span }
 
-    in loop [ ltree ] 0
+let scan_modtimes ?(print_progress=false) ltree = 
+  let sum = zed in
+    (* We print a progress indicator every 500 files. Hence the counter. *)
+    (* This is written so that it SHOULD do a depth first traversal
+       of the tree without building the whole thing in memory.  It
+       would do well to verify this property. *)
+  let rec loop trees counter =
+    (*	    printf "\n trees on stack: %d\n" (List.length trees);
+	    printf "MEM alloced: %f\n" (Gc.allocated_bytes ());
+    (*Gc.print_stat Pervasives.stdout;*)
+	    Gc.full_major ();
+	    printf "GC DONE\n";*)
+    let counter = 
+      if counter > 500 && print_progress
+      then (print_char '.';
+	    Pervasives.flush Pervasives.stdout;	    
+	    counter - 499)
+      else counter + 1
+    in
+      if trees = []
+      then sum
+      else (match List.hd trees with 
+		Lfile (_,s) ->
+		  sum.filespan <- update_span sum.filespan s.st_mtime;
+		  loop (List.tl trees) counter
+		    
+	      | Llink ((_,s),_) -> 
+		  sum.linkspan <- update_span sum.linkspan s.st_mtime;
+		  loop (List.tl trees) counter
+		    
+	      | Ldir  ((_,s),lazyls) ->
+		  sum.dirspan <-  update_span sum.dirspan  s.st_mtime;
+		  loop (Lazy.force lazyls @ List.tl trees) counter)
 
-
-  let print_date date = 
-    if date = min_float ||  date = max_float 
-    then "_"
-    else 
-      let date = localtime date in
-	if not !year_first
-	then sprintf "%02d/%02d/%04d" 
-	  (date.tm_mon+1) 
-	  (date.tm_mday)
-	  (date.tm_year+1900)
-	else sprintf "%02d.%02d.%02d" 
-	  (date.tm_year+1900)
-	  (date.tm_mon+1) 
-	  (date.tm_mday)
+  in loop [ ltree ] 0
 
 
-  let print_res indent sum =
-    if !verbose
-    then 
-      ((if is_live sum.filespan
-	then printf "%sFiles from %s to %s.\n" indent 
-	  (print_date sum.filespan.early) (print_date sum.filespan.late)); 
-       (if is_live sum.dirspan
-	then printf "%sDirs  from %s to %s.\n" indent 
-	  (print_date sum.dirspan.early)  (print_date sum.dirspan.late)); 
-       (if is_live sum.linkspan
-	then printf "%sLinks from %s to %s.\n" indent 
-	  (print_date sum.linkspan.early) (print_date sum.linkspan.early)); )
+let graph_it sum = 
+  histogram (Array.of_list sum.filespan.acc)
 
-  let plus_span a b = 
-    { early = min a.early b.early;
-      late  = max a.early b.early }
+let print_date date = 
+  if date = min_float ||  date = max_float 
+  then "_"
+  else 
+    let date = localtime date in
+      if not !year_first
+      then sprintf "%02d/%02d/%04d" 
+	(date.tm_mon+1) 
+	(date.tm_mday)
+	(date.tm_year+1900)
+      else sprintf "%02d.%02d.%02d" 
+	(date.tm_year+1900)
+	(date.tm_mon+1) 
+	(date.tm_mday)
 
-  let plus x y =
-    { filespan = plus_span x.filespan y.filespan;
-      dirspan  = plus_span x.dirspan  y.dirspan;
-      linkspan = plus_span x.linkspan y.linkspan; } 
+let print_span spn = 
+  sprintf "from %s to %s" 
+    (print_date spn.early) 
+    (print_date spn.late) 
+ 
+let print_averages spn = 
+  sprintf "average date: %s" 
+    (print_date (spn.sum /. spn.count))
+
+let print_res indent (sum : modtimes_t) =
+  if !verbose
+  then 
+    let helper printer = 
+      (if is_live sum.filespan
+       then printf "%sFiles %s.\n" indent (printer sum.filespan));
+      (if is_live sum.dirspan
+       then printf "%sDirs  %s.\n" indent (printer sum.dirspan));
+      (if is_live sum.linkspan
+       then printf "%sLinks %s.\n" indent (printer sum.linkspan)); 
+    in
+      if !averages
+      then helper print_averages
+      else helper print_span;    
+      if !graph_distro then graph_it sum;;
+
+	  
+let plus_span a b = 
+  { early = min a.early b.early;
+    acc   = a.acc @ b.acc;
+    sum   = a.sum +. b.sum;
+    count = a.count +. b.count;
+    late  = max a.late  b.late; };;
+
+let plus x y =
+  { filespan = plus_span x.filespan y.filespan;
+    dirspan  = plus_span x.dirspan  y.dirspan;
+    linkspan = plus_span x.linkspan y.linkspan; };;
 
 (*    if !use_color
     then
@@ -182,7 +222,7 @@ struct
 	 indent (comma_int64
 		   (add (add sum.filebytes sum.dirbytes) sum.linkbytes )));
 *)
-end
+
 
 (********************************************************************)
 
@@ -202,8 +242,6 @@ let pair a b = (a,b)
 (********************************************************************)
 (* Main script *)
 
-open Newver
-
 let main () =
 
   let paths = (* Here are all those filepaths. *)
@@ -211,6 +249,9 @@ let main () =
 		  (* Process flags *)
 		  (function
 		     | "-h"  -> print_help (); false
+		     | "-av"  -> averages := true; false
+		     | "-g"  -> graph_distro := true; false
+
 		     | "-c"  -> use_color := true; false
 		     | "-nc" -> use_color := false; false
 		     | "-b"  -> use_color := true; 
@@ -241,6 +282,8 @@ let main () =
 	    print_res "    " res;
 	    res))
       paths in
+
+  let total = List.fold_left plus zed counts in
     
 (*    if !sort_output
     then 
@@ -257,9 +300,9 @@ let main () =
 	      print_res "    " cnt)
 	   sorted);*)
     
-(*    if List.tl paths <> []
+    if List.tl paths <> []
     then (printf "\nTotal: \n";
-	  print_res "  " total);*)
+	  print_res "  " total);
     if !use_color
     then switch_color Ansi.Reset;;
 
