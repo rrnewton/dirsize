@@ -98,6 +98,14 @@ let rec tree_of_ltree ltree =
 	Dir (name,
 	     List.map tree_of_ltree (Lazy.force ltree))
 
+(* This is annoying *)
+let get_absolute_path s =
+  if is_absolute s 
+  then s
+  else 
+  current_dir_name
+
+
 (* This should really be called read_lfile, because it can read
    symlinks and plainfiles as well as directories... *)
 let rec read_ldir path =
@@ -121,11 +129,46 @@ let rec read_ldir path =
       | _ -> failwith 
 	  (sprintf "read_ldir: this file is of an unknown type: %s" path)
 
+
 (* Hmm I just put an 'name' in place of the loop 'n' above...  Are
    there any extrinsic properties of the program that could hint at
    that error *)
 
+(* This could probably be more efficient. *)
 let read_dir path = tree_of_ltree (read_ldir path)
+
+
+(*and afiletree =
+    Adir of  (string * stats * string) * lfiletree list Lazy.t
+  | Alink of (string * stats * string) * string
+  | Afile of (string * stats * string)
+*)
+(* adir's have name,stats,fullpath *)
+
+let rec read_adir path =
+  let startpath = get_absolute_path path in
+  let stats = lstat path in
+    match stats.st_kind  with
+	S_REG -> Lfile (basename path,stats)
+      | S_LNK -> Llink ((basename path,stats),readlink path)
+      | S_DIR -> 
+	  let rec loop name path stats = 
+	    Ldir 
+	      ((name,stats),
+	       lazy
+		 (let files,dirs,syms = expand_dir path in
+		    List.map (fun x -> Lfile x) files @
+		    List.map (fun (n,s) -> 
+				Llink ((n,s),(readlink (concat path n)))) 
+		      syms @
+		    List.map (fun (n,s) -> 
+				loop n (concat path n) s) dirs)) in 
+	    loop (basename path) path (lstat path)
+      | _ -> failwith 
+	  (sprintf "read_ldir: this file is of an unknown type: %s" path)
+
+
+
 
 let print_tree ft =
   let rec loop indent tree = 
