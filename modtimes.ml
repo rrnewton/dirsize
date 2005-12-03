@@ -152,9 +152,17 @@ let print_date date =
 	(date.tm_mday)
 
 let print_span spn = 
-  sprintf "from %s to %s" 
-    (print_date spn.early) 
-    (print_date spn.late) 
+  let early,late = (print_date spn.early), (print_date spn.late) 
+  in if !use_color 
+     then Ansi.print_colored 
+       [!norm_color, "from "; 
+	!total_color, early; 
+	!norm_color, " to "; 
+	!total_color, late; 
+	!norm_color, "";
+       ]
+     else printf "from %s to %s" early late;;
+       
  
 let print_averages spn = 
   sprintf "average date: %s" 
@@ -165,11 +173,17 @@ let print_res indent (sum : modtimes_t) =
   then 
     let helper printer = 
       (if is_live sum.filespan
-       then printf "%sFiles %s.\n" indent (printer sum.filespan));
+       then (printf "%sFiles " indent;
+             printer sum.filespan;
+	     printf ".\n"));
       (if is_live sum.dirspan
-       then printf "%sDirs  %s.\n" indent (printer sum.dirspan));
+       then (printf "%sDirs  " indent;
+	     printer sum.dirspan;
+	     printf ".\n";));
       (if is_live sum.linkspan
-       then printf "%sLinks %s.\n" indent (printer sum.linkspan)); 
+       then (printf "%sLinks " indent;
+	     printer sum.linkspan; 
+	     printf ".\n"))
     in
       if !averages
       then helper print_averages
