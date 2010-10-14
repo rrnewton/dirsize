@@ -249,6 +249,7 @@ let print_help () =
   print_endline "  -b   Use ANSI color.  Blue and yellow theme.";
   print_endline "  -nc  Don't use color.  Plain ASCII.";
   print_endline "  -s   Sort output by filesize, increasing.";
+  print_endline "  -g   Draw histogram of dates (experimental).";
   exit 0;;
 
 let pair a b = (a,b) 
@@ -262,6 +263,7 @@ let main () =
     (let temp = List.filter
 		  (* Process flags *)
 		  (function
+		     | "--help"  -> print_help (); false
 		     | "-h"  -> print_help (); false
 		     | "-av"  -> averages := true; false
 		     | "-g"  -> graph_distro := true; false

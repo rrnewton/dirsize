@@ -1,7 +1,20 @@
 
 
-all: dirtree dirsize mods
+all: rutils graphing dirtree dirsize mods
 	chmod o+r *
+
+rutils:
+	ocamlc unix.cma -c rutils.mli rutils.ml
+	ocamlc  -a -o rutils.cma rutils.cmo
+	ocamlopt unix.cmxa -c rutils.mli rutils.ml
+	ocamlopt  -a -o rutils.cmxa rutils.cmx
+
+graphing:
+	ocamlc unix.cma rutils.cma -c graphs.mli graphs.ml
+	ocamlc  -a -o graphs.cma graphs.cmo
+	ocamlopt unix.cmxa rutils.cmxa -c graphs.mli graphs.ml
+	ocamlopt -a -o graphs.cmxa graphs.cmx
+
 
 dirtree: dirtree.ml dirtree.mli
 	ocamlc -c rutils.cma unix.cma dirtree.mli dirtree.ml

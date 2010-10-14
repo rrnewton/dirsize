@@ -145,6 +145,7 @@ let main () =
 		  (* Process flags *)
 		  (function
 		     | "-h"  -> print_help (); false
+		     | "--help"  -> print_help (); false
 		     | "-v"  -> print_version (); false
 		     | "-c"  -> use_color := true; false
 		     | "-nc" -> use_color := false; false
