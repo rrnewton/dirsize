@@ -1,4 +1,4 @@
-
+{-# LANGUAGE ScopedTypeVariables #-}
 
 import System.Environment
 import System.Directory.Tree
@@ -15,19 +15,25 @@ main = do
 --  argcv <- getArgs
   [dir] <- getArgs
   putStrLn$ "Reading directory: " ++ dir
-  stats <- readDirectoryWithL getSymbolicLinkStatus dir  
---  stats <- readDirectoryWith getSymbolicLinkStatus dir  
+
+  let read file = 
+       do stat <- getSymbolicLinkStatus file
+	  return (if isRegularFile stat 
+		  then fileSize stat
+		  else 0)
+	    
+--  stats <- readDirectoryWithL read dir  
+--  root :/ (sizes :: DirTree Int64) <- readDirectoryWithL read dir  
+  root :/ sizes  <- readDirectoryWithL read dir  
 
   let 
-      real_files = map (\ (x,y) -> (x, fileSize y)) $ 
-	           filter (isRegularFile . snd) $
-		   toList $ zipPaths stats
---      fn :: (String,Int64) -> (Int64,Int64) -> (Int64,Int64)
-      fn (path,size) (n,bytes) = (n+1, bytes + size)
+--      fn 0 x = x
+--      fn 1 (cnt,bytes) = 
+--      bytes = F.foldr fn (0,0) sizes
+      bytes = F.foldr (+) 0 sizes
 
-      (num,bytes) = F.foldr fn (0,0) real_files
 
-  putStrLn$ "Found "++ show num ++" regular files." 
+--  putStrLn$ "Found "++ show num ++" regular files." 
   putStrLn$ "Containing "++ commaint bytes ++"  bytes." 
 
 
