@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 import System.Environment
 import System.Directory.Tree
 import System.PosixCompat.Files
@@ -9,5 +10,6 @@ main = do [dir] <- getArgs
 			  then fileSize stat
 			  else 0)
 	  root :/ sizes  <- readDirectoryWithL read dir  
-	  let bytes = F.foldr (+) 0 sizes
+	  let strictplus !x !y = x+y
+	      bytes = F.foldr strictplus 0 sizes
 	  putStrLn$ "Contains "++ show bytes ++"  bytes." 

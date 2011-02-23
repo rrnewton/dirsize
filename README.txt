@@ -142,3 +142,64 @@ rather than 66% above...
     user    0m6.697s
     sys     0m14.192s
 
+
+
+[2011.02.22] {Another round of timing on Wasp}
+----------------------------------------------------------------------------------------------------
+
+Counting all of /opt/:
+
+OCaml ds:
+    30,359,845,504 bytes in 685974 plain files.
+       104,321,024 bytes in 18414 directories.
+            24,520 bytes in 808 symlink files.
+    30,464,191,048 bytes total.
+    real    0m2.029s
+    user    0m0.630s
+    sys     0m1.400s
+
+du:
+  real    0m0.995s
+  user    0m0.130s
+  sys     0m0.860s
+
+Haskell v1 (ds.hs, stack size problem):
+With a 100M stack it can complete but that silly (95% time in GC):
+  real    1m22.624s
+  user    1m18.690s
+  sys     0m3.870s
+OOPS... this is using the FOLLOW SYMLINKS VERSION!!
+
+Haskell stream_ds.hs:
+  
+Haskell stream_ds2.hs:
+    [newton@wasp] $ time ./stream_ds2 /opt/
+    30359845504
+    real    0m11.787s
+    user    0m10.110s
+    sys     0m1.680s
+
+Hsakell filemanip (6 line version, 27% GC):
+    real    0m5.932s
+    user    0m4.080s
+    sys     0m1.850s
+
+Haskell imperative.hs (5% GC):
+    Total bytes: 30359845504
+    real    0m3.207s
+    user    0m1.650s
+    sys     0m1.560s
+    
+
+Python ds.py (2.6.5):
+    Total for /opt: 30359845504 bytes
+    real    0m9.282s
+    user    0m5.750s
+    sys     0m3.530s
+
+Python ds2.py:   
+    Total for /opt: 30359845504 bytes
+    real    0m9.310s
+    user    0m5.720s
+    sys     0m3.590s
+

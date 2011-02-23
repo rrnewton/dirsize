@@ -15,8 +15,8 @@ def count_dir(dirname):
     counts[parent] = counts.get(parent, 0) + total
     if dirname == root:
       print "Total for %s: %s bytes" % (os.path.abspath(dirname), total)
-    else:
-      print "%s %s: %s" % ('+' * (root.count('/') - o), root, total) 
+#    else:
+#      print "%s %s: %s" % ('+' * (root.count('/') - o), root, total) 
 
 if __name__ == '__main__':
   if len(sys.argv) == 1:
