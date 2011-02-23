@@ -45,8 +45,6 @@ install:
 	dirname `which ocamlc` | cp dirsize -
 	dirname `which ocamlc` | xargs cp mods 
 
-cleanup: 
+clean: 
+	rm -f *.cmxa *.cma *.a dirsize debug mods *.hi
 	rm -f *.cmi *.cmx *.cmo *.o *~ a.out
-
-clean: cleanup
-	rm -f *.cmxa *.cma *.a dirsize debug mods
