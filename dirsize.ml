@@ -25,7 +25,7 @@ open Dirtree
 
 let version = "0.9"
 
-let use_color   = ref false
+let use_color   = ref true  (* [2016.08.31] Change default. *)
 let norm_color  = ref Ansi.Darkgray
 let path_color  = ref Ansi.Red
 let total_color = ref Ansi.Green
