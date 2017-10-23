@@ -1,3 +1,5 @@
+# Impure: use the host nixpkgs:
+# This has been tested with: 
 { pkgs ? import <nixpkgs> {}
 #, stdenv
 #, ocaml
