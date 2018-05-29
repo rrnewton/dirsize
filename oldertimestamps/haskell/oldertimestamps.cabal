@@ -1,0 +1,38 @@
+-- This file has been generated from package.yaml by hpack version 0.28.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: bdb3d64bb24ea895a991cef2cf7a8c621569e5111e62799190f6251b51f6451c
+
+name:           oldertimestamps
+version:        0.1.0.0
+author:         Ryan Rhodes Newton
+maintainer:     ryan.newton@alum.mit.edu
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+cabal-version:  >= 1.10
+-- extra-source-files:  README.md
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/simple
+
+
+executable oldertimestamps
+  main-is: Main.hs
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -O2 -rtsopts -with-rtsopts=-N
+  build-depends:
+                base >=4.7 && <5
+              , async
+              , process
+              , rawfilepath
+              , text
+              , unix
+
+              , turtle
+              , shelly
+  default-language: Haskell2010
+

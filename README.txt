@@ -3,7 +3,7 @@
 [2011.02.13] {Implemented a simple haskell version}
 
 Just for fun, because there's the nice "directory-tree" package to
-make it trivial.  Alas, it injects spurious and waseful CPU usage.
+make it trivial.  Alas, it injects spurious and wasteful CPU usage.
 When I run it on a directory that's only 32K files, "ds" is properly
 dominated by system time (from system calls), but the haskell version
 is CPU bound:
@@ -202,4 +202,53 @@ Python ds2.py:
     real    0m9.310s
     user    0m5.720s
     sys     0m3.590s
+
+
+[2018.05.28] {Revisiting this topic - desire for a new tool}
+------------------------------------------------------------
+
+I'm looking to build another tool that retrieves old modification
+times and applies them to files whose modification times have
+accidentally been brought up to a new (constant, erroneous) time.
+
+This of course also requires being able to walk a directory -- the
+simple task which seems to admit so many different implementations and
+performance consequences.
+
+I started digging into the source code of baobab and then GNU
+findutils.  I found the "fts(3)" functionality used by the newer find.
+
+
+Rust walkdir:
+
+ * https://github.com/BurntSushi/walkdir
+
+
+ <Q> Parallel speedup available when traversing a directory?
+
+How scalable are the kernel + filesystems?  If N cores are
+simultaneously executing readdir (or fts_open, or
+openat/fstat/fcntrl/getdents), can they get a substantial speedup?
+
+I haven't found any evidence yet of any tool performing this trick.
+Mac OS DaisyDisk scans very fast... I wonder what tricks they perform.
+I could imagine getting lower level access to the file systems
+representation and then parsing it directly...
+
+In this amazing issue some Rust folks actually time the parallel IO
+proposition:
+   https://github.com/BurntSushi/walkdir/issues/21
+
+Huh, same guy also provides a faster grep: https://github.com/BurntSushi/ripgrep
+
+
+Footnote: New Haskell libs for dir walking dirs
+-----------------------------------------------
+
+Since I previously performed these experiments, there are some new
+libs:
+
+ * pathwalk
+   http://hackage.haskell.org/package/pathwalk-0.3.1.2/docs/System-Directory-PathWalk.html
+
 
