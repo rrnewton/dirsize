@@ -20,8 +20,7 @@ import Prelude            as P
 import System.Console.Concurrent as CC
 import System.Console.Regions
 
--- type Acc = [(Int,Text)]
-type Acc = M.IntMap Text
+type Acc = M.IntMap (Text,FileStatus)
 
 -- Non-threadsafe bump operation.
 bump :: AtomicCounter -> IO ()
@@ -34,7 +33,7 @@ reduce ref !acc ln = do
   stat <- getSymbolicLinkStatus (Text.unpack (lineToText ln))
   bump ref
   return $! M.insert (fromIntegral (F.fileSize stat))
-                     (lineToText ln)
+                     (lineToText ln, stat)
                      acc
 
 statusPrint :: AtomicCounter -> AtomicCounter -> Async a -> IO ()
@@ -81,7 +80,9 @@ main = do
   m3 <- evaluate $ M.intersectionWith (,) m1 m2
   putStrLn$ "Intersection size: "++show (M.size m3)
 
-  mapM print (M.toList m3)
+  mapM_ (\(sz,((nm1,_),(nm2,_))) -> do putStrLn (show sz ++ ": " ++ Text.unpack nm1)
+                                       putStrLn ("         " ++ Text.unpack nm2))
+        (M.toList m3)
   
   -- print $ P.length  l1
   -- print $ P.length  l2
