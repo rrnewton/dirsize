@@ -6,6 +6,8 @@ module Main where
 
 import Control.Concurrent (threadDelay)    
 import Control.Exception (evaluate)
+import Control.Monad.Par.Class as Par
+import Control.Monad.Par.IO    as Par
 import Control.Concurrent.Async as A
 -- import Data.IORef as R
 import Data.Atomics.Counter as C -- For unboxed counter.
@@ -57,7 +59,33 @@ statusPrint c1 c2 a = spawnem >> return ()
        Just _  -> do n <- C.readCounter cnt
                      finishConsoleRegion r ("Final found: "++show n)
                      return ()
-              
+
+type SHA = String
+                            
+shasums :: IntMap ((Text,FileStatus),(Text,FileStatus))
+        -> ParIO (IntMap ((Text,FileStatus, SHA),
+                          (Text,FileStatus, SHA)))
+shasums m | M.null m  = return M.empty
+          | otherwise = do             
+             let ls = M.splitRoot m
+             loop ls
+ where
+  loop [x] =
+      case M.toList x of
+        [((t1,s1),(t2,s2))] -> undefined
+  loop [x,y] = do
+    xf <- spawn_ (shasums x)
+    yf <- spawn_ (shasums y)    
+    liftIO (putStrLn "FIXME")
+    x' <- Par.get xf
+    y' <- Par.get yf
+    return $! M.union x' y'
+  
+  -- futs <- mapM (Par.spawn_  . shasums m') ls
+  --            liftIO (putStrLn "FIXME")
+  --            undefined
+
+
 main :: IO ()
 main = do
   let findem dir = inproc "find" [dir] mempty
@@ -84,9 +112,10 @@ main = do
                                        putStrLn ("         " ++ Text.unpack nm2))
         (M.toList m3)
   
-  -- print $ P.length  l1
-  -- print $ P.length  l2
+  -- SHA sum in parallel:
+  m4 <- runParIO $ shasums m3
+                
   putStrLn "Done."
 
 
--- do { (r,a) <- startProgress (\_ -> "A") (\_ -> "B") 60 (Progress 0 100); let loop = (incProgress r 1 >> sleep 1 >> loop) in loop }        
+

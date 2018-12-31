@@ -26,10 +26,12 @@ executable oldertimestamps
   ghc-options: -threaded -O2 -rtsopts -with-rtsopts=-N
   build-depends:
                 base >=4.7 && <5
+              , abstract-par
               , async
               , atomic-primops
               , concurrent-output
               , containers
+              , monad-par
               , process
               , rawfilepath
               , rdtsc

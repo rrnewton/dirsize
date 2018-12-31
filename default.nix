@@ -1,6 +1,8 @@
 # Impure: use the host nixpkgs:
 # This has been tested with: 
-{ pkgs ? import <nixpkgs> {}
+{ pkgs ?
+  import (fetchTarball "https://github.com/NixOS/nixpkgs-channels/archive/nixos-17.03.tar.gz") {}
+# import <nixpkgs> {}
 #, stdenv
 #, ocaml
 }:
